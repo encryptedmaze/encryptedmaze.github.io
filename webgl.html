@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+	<body>
+		<canvas width = '800' height = '800' id = 'canvas'></canvas><br>
+		<span>Random Velocity Factor</span><br><input type = 'range' autocomplete = 'off' id= 'randVelFactor' min = '0' max = '5' step = '0.01' value = '1'><br><br>
+		<span>Particle Count</span><br><input type = 'range' autocomplete = 'off' id= 'particleCount' min = '1' max = '1024' step = '1' value = '256'><br><br>
+		<button onclick = 'replay()'>Replay</button>
+		<script type = 'text/JavaScript'>
+			var engine = {
+				FPS: 60,
+				animate: true,
+				particleSize: 0.025,
+				particleCount: 256,
+				bounds: [1, -1, 1, -1],
+				gravity: -0.001,
+				minVelocity: 0.001,
+				naxVelocity: 0.4,
+				bounceHeight: 0.9,
+				colorRepeat: 6,
+				randVelFactor: 1,
+				origin: [0 - 0.025 * 8, 0 - 0.025 * 8]
+			};
+			function genVertices (x, y) {
+				engine.vertices.push(x, y);
+				engine.vertices.push(x, y + engine.particleSize);
+				engine.vertices.push(x + engine.particleSize, y);
+				
+				engine.vertices.push(x + engine.particleSize, y);
+				engine.vertices.push(x, y + engine.particleSize);
+				engine.vertices.push(x + engine.particleSize, y + engine.particleSize);
+			}
+			function genSquare() {
+				var x = engine.origin[0];
+				var y = engine.origin[1];
+				for (y_iter = 0; y_iter < Math.floor(Math.sqrt(engine.particleCount)); y_iter++) {
+					for (x_iter = 0; x_iter < Math.floor(Math.sqrt(engine.particleCount)); x_iter++) {
+						genVertices(x, y);
+						x += engine.particleSize;
+					}
+					x = engine.origin[0];
+					y += engine.particleSize;
+				}
+			}
+			function genRandColor () {
+				r = Math.round(Math.random());
+				g = Math.round(Math.random());
+				b = Math.round(Math.random());
+				if (r + g + b == 0) {
+					return genRandColor();
+				} else {
+					return {r:r, g:g, b:b};
+				}
+			}
+			function genColors () {
+				for (var n = 0; n < engine.vertices.length / engine.colorRepeat * 2; n++) {
+					var {r, g, b} = genRandColor();
+					for (var i = 0; i < engine.colorRepeat; i++) {
+						engine.colors.push(r, g, b, 1);
+					}
+				}
+			}
+			function genRandVel () {
+				for (var i = 0; i < engine.vertices.length / 6; i++) engine.velocityY[i] = engine.randVelFactor * Math.sign(Math.random() - 0.5) * (Math.random() * 0.01);
+				for (var i = 0; i < engine.vertices.length / 6; i++) engine.velocityX[i] = engine.randVelFactor * Math.sign(Math.random() - 0.5) * (Math.random() * 0.01);
+			}
+			var vertCode = `
+				attribute vec4 aColor;
+				attribute vec3 aPos;
+				varying vec4 vColor;
+
+				void main (void) {
+					gl_Position = vec4 (aPos, 1.0);
+					vColor = aColor;
+				}
+			`;
+			var fragCode = `
+				varying lowp vec4 vColor;
+				void main (void) {
+					gl_FragColor = vColor;
+				}
+			`;
+			var canvas, gl, color_buffer, vertex_buffer, vertShader, fragShader, shaderProgram, aPos, aColor;
+			engine.vertices = [];
+			engine.colors = [];
+			engine.velocityX = [];
+			engine.velocityY = [];
+			engine.groupSize = 12;
+			function init () {
+				canvas = document.getElementById('canvas');
+				gl = canvas.getContext('webgl');
+				engine.vertices = [];
+				engine.colors = [];
+				genSquare();
+				genColors();
+				genRandVel();
+				engine.color_buffer = gl.createBuffer();
+				engine.vertex_buffer = gl.createBuffer();
+				gl.clearColor(0, 0, 0, 1);
+				gl.enable(gl.DEPTH_TEST);
+				gl.viewport(0, 0, canvas.width, canvas.height);
+			}
+			function compile () {
+				engine.vertShader = gl.createShader(gl.VERTEX_SHADER);
+				gl.shaderSource(engine.vertShader, vertCode);
+				gl.compileShader(engine.vertShader);
+				engine.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+				gl.shaderSource(engine.fragShader, fragCode);
+				gl.compileShader(engine.fragShader);
+				engine.shaderProgram = gl.createProgram();
+				gl.attachShader(engine.shaderProgram, engine.vertShader);
+				gl.attachShader(engine.shaderProgram, engine.fragShader);
+				gl.linkProgram(engine.shaderProgram);
+				gl.useProgram(engine.shaderProgram);
+				engine.aPos = gl.getAttribLocation(engine.shaderProgram, "aPos");
+				engine.aColor = gl.getAttribLocation(engine.shaderProgram, "aColor");
+			}
+			function draw (vertexCount) {
+				vertexCount = vertexCount || engine.vertices.length / 2;
+				gl.bindBuffer(gl.ARRAY_BUFFER, engine.color_buffer);
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(engine.colors), gl.STATIC_DRAW);
+				gl.enableVertexAttribArray(engine.aColor);
+				gl.vertexAttribPointer(engine.aColor, 4, gl.FLOAT, false, 0, 0);
+				gl.bindBuffer(gl.ARRAY_BUFFER, engine.vertex_buffer);
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(engine.vertices), gl.STATIC_DRAW);
+				gl.enableVertexAttribArray(engine.aPos);
+				gl.vertexAttribPointer(engine.aPos, 2, gl.FLOAT, false, 0, 0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+				gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+			}
+			function groundLevel (n) {
+				if ([1, 3, 4].includes((n + 1) / 2 % 6)) return engine.bounds[3];
+				if ([0, 2, 5].includes((n + 1) / 2 % 6)) return engine.bounds[3] + engine.particleSize;
+			}
+			function replay () {
+				engine.randVelFactor = document.getElementById('randVelFactor').value;
+				engine.particleCount = document.getElementById('particleCount').value;
+				engine.origin = [0 - engine.particleSize * Math.round(Math.sqrt(engine.particleCount)) / 2, 0 - engine.particleSize * Math.round(Math.sqrt(engine.particleCount)) / 2];
+				init();
+			}
+			function main () {
+				init();
+				compile();
+				setInterval(()=>{
+					if (engine.animate) {
+						for (var i = 0; i < engine.vertices.length - 2; i += engine.groupSize) {
+							engine.velocityY[i / engine.groupSize] += engine.gravity;
+							engine.velocityX[i / engine.groupSize] *= 0.99;
+							for(var j = 0; j < engine.groupSize / 2; j++) {
+								engine.vertices [i + 2 * j] += engine.velocityX[i / engine.groupSize];
+							}
+							for(var j = 0; j < engine.groupSize / 2; j++) {
+								engine.vertices [i + 1 + 2 * j] += engine.velocityY[i / engine.groupSize];
+							}
+							for (var j = 1; j < engine.groupSize; j += 2) {
+								if (engine.vertices[i + j] < groundLevel(j)) {
+									engine.vertices[i + j] = groundLevel(j);
+									engine.velocityY[i / engine.groupSize] = Math.abs(engine.velocityY[i / engine.groupSize]) * engine.bounceHeight;
+								}
+							}
+							if (Math.abs(engine.velocityY[i / engine.groupSize]) > engine.maxVelocity) {
+								engine.velocityY[i / engine.groupSize] = Math.sign(engine.velocityY[i / engine.groupSize]) * engine.maxVelocity;
+							}
+							if (Math.abs(engine.velocityY[i / engine.groupSize]) < engine.minVelocity) {
+								engine.velocityY[i / engine.groupSize] = 0;
+							}
+							if (Math.abs(engine.velocityX[i / engine.groupSize]) > engine.maxVelocity) {
+								engine.velocityX[i / engine.groupSize] = Math.sign(engine.velocityX[i / engine.groupSize]) * engine.maxVelocity;
+							}
+							if (Math.abs(engine.velocityX[i / engine.groupSize]) < engine.minVelocity) {
+								engine.velocityX[i / engine.groupSize] = 0;
+							}
+						}
+					}
+					draw();
+				}, Math.round(1000 / engine.FPS));
+			}
+			main();
+		</script>
+	</body>
+</html>
