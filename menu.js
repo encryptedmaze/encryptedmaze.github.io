@@ -113,7 +113,7 @@ function main() {
   var then = 0;
 
   requestAnimationFrame(drawScene);
-	var rotX = 0, rotY = 0;
+	var rotX = 0, rotY = 180;
   // Draw the scene.
   function drawScene(time) {
     // convert to seconds
@@ -122,8 +122,8 @@ function main() {
     var deltaTime = time - then;
     // Remember the current time for the next frame.
     then = time;
-	rotX += deltaX * 0.0005;
-	rotY += deltaY * 0.0005;
+	rotX += deltaX * 0.05;
+	rotY += deltaY * 0.05;
     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
     // Tell WebGL how to convert from clip space to pixels
@@ -157,11 +157,12 @@ function main() {
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     var projectionMatrix =
         m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
-
+		if (rotY > 269.9) {rotY = 269.9;}
+  if (rotY < 90.1) {rotY = 90.1;}
     // camera going in circle 2 units from origin looking at origin
     var cameraPosition = [0,0,0];
-	var matX = m4.yRotation(-rotX);
-	var matY = m4.zRotation(-rotY);
+	var matX = m4.yRotation(degToRad(-rotX));
+	var matY = m4.zRotation(degToRad(rotY));
 	var rot = m4.multiply(matX, matY);
     var target = [1, 0, 0, 0];
 	target = m4.transformVector(rot, target);
