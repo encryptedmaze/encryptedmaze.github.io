@@ -79,7 +79,7 @@ function main() {
     const height = 512;
     const format = gl.RGBA;
     const type = gl.UNSIGNED_BYTE;
-
+	
     // setup each face so it's immediately renderable
     gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
 
@@ -95,7 +95,8 @@ function main() {
     });
   });
   gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  // gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
   function radToDeg(r) {
     return r * 180 / Math.PI;
