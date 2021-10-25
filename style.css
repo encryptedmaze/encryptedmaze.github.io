@@ -1,36 +1,33 @@
 html {
-	background: linear-gradient(#00d, #005);
+	background: #181818;
 	height: 100%;
     margin: 0;
     background-repeat: no-repeat;
     background-attachment: fixed;
-}
-html, body {
-	margin: 0px;
-	padding: 0px;
-}
-#header {
-	display: flex;
-	background-color: #aaa;
-}
-#header a:link, a:visited {
-	background-color: #eee;
-	margin: 10px 0px 10px 0px;
-	flex-grow: 1;
-	align-self: center;
-	
+	color: #FFF;
 	text-align: center;
-	font-size: 20px;
-	color: black;
-	box-shadow: 2px 2px 5px #222;
-	
-	text-decoration: none;
-	outline: none;
-	
-	transition: all 75ms ease-in-out
+	font-family: 'Open Sans', sans-serif;
 }
-#header a:hover {
-	flex-grow:1.1;
-	background-color: #fff;
-	box-shadow: 5px 5px 10px #555;
+h1 {
+	letter-spacing: 1px;
+	font-size: 40px;
+}
+p {
+	font-size: 25px;
+}
+.bg-img {
+	width: 400px;
+	max-width: 75%;
+}
+.btn {
+	display: inline-block;
+	margin: 10px 10px;
+}
+.btn:hover {
+	opacity: 0.5;
+	transition: all 0.25s ease-in-out;
+}
+.btn img {
+	width: 50px;
+	height: 50px;
 }
