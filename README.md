@@ -1,5 +1,5 @@
 # encryptedmaze.github.io
-encryptedmaze.net site repo
+https://encryptedmaze.net site repo
 
 Static html/css, nothing fancy.
 
